@@ -80,7 +80,7 @@ text {
 .y.axis text {
   font-size: 13px;
 }
-.y.axis text.highlight {
+text.highlight {
   font-weight: 600;
   fill: #616161;
 }
@@ -100,6 +100,18 @@ path.domain {
 }
 .card-person {
   font-size: 13px;
+}
+.tab-barchart .column .column-header-text {
+  font-weight: 600;
+}
+.tab-barchart .group-header .group-header-text {
+  font-weight: 600;
+}
+.legend-text {
+  font-size: 11px;
+}
+.line-chart .x path.domain {
+  display: none;
 }
 main {
   padding: 26px;
