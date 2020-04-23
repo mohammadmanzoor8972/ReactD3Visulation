@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
+    <style>
+      .label {
+        font: 10px sans-serif;
+      }
+
+      .axis {
+        font: 11px sans-serif;
+        font-weight: bold;
+      }
+
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="chart"></div>
+    <script>
+      var url =
+        "https://gist.githubusercontent.com/amandabee/edf73bc0bbe131435c952f5ed47524a6/raw/99febb9971f76e36af06f1b99913fcaa645ecb3e/election.csv";
+      var m = {
+          top: 30,
+          right: 10,
+          bottom: 50,
+          left: 110
+        },
+        w = 600 - m.left - m.right,
+        h = 600 - m.top - m.bottom,
+        pad = 0.3,
+        padPixel = 0;
+
+      var x = d3.scale.linear().range([0, w]);
+      var y0 = d3.scale.ordinal();
+
+      var color = d3.scale.category20c();
+
+      var yAxis = d3.svg
+        .axis()
+        .scale(y0)
+        .orient("left");
+
+      var xAxis = d3.svg
+        .axis()
+        .scale(x)
+        .orient("bottom")
+        .ticks(5)
+        .tickFormat(d3.format("$,.0f"));
+
+      var svg = d3
+        .select("#chart")
+        .append("svg")
+        .attr("width", w + m.right + m.left + 100)
+        .attr("height", h + m.top + m.bottom)
+        .append("g")
+        .attr("transform", "translate(" + m.left + "," + m.top + ")");
+
+      // This moves the SVG over by m.left(110)
+      // and down by m.top (10)
+
+      d3.csv(url, function(error, data) {
+        data.forEach(function(d) {
+          d.votes = +d.votes;
+        });
+
+        var barHeight = h / data.length;
+
+        y0.domain(
+          data.map(function(d) {
+            return d.district;
+          })
+        );
+
+        var y0Range = [0];
+        const districtD = d3
+          .nest()
+          .key(function(d) {
+            return d.district;
+          })
+          .rollup(function(d) {
+            var barSpace = barHeight * d.length;
+            y0Range.push(y0Range[y0Range.length - 1] + barSpace);
+            return d3.scale
+              .ordinal()
+              .domain(
+                d.map(function(c) {
+                  return c.candidate;
+                })
+              )
+              .rangeRoundBands([0, barSpace], pad);
+          })
+          .map(data);
+
+        y0.range(y0Range);
+
+        x.domain([
+          0,
+          d3.max(data, function(d) {
+            return d.votes;
+          })
+        ]);
+
+        svg
+          .append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + h + ")")
+          .call(xAxis)
+          .selectAll("text")
+          .style("text-anchor", "middle");
+
+        svg
+          .append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+          .append("text");
+
+        svg
+          .selectAll("bar")
+          .data(data)
+          .enter()
+          .append("rect")
+          .style("fill", function(d, i) {
+            return color(d.district);
+          })
+          .attr("x", 0)
+          .attr("y", function(d) {
+            return y0(d.district) + districtD[d.district](d.candidate);
+          })
+          .attr("height", function(d) {
+            return districtD[d.district].rangeBand();
+          })
+          .attr("width", function(d) {
+            return x(d.votes);
+          });
+
+        var ls = svg
+          .selectAll(".labels")
+          .data(data)
+          .enter()
+          .append("g");
+
+        ls.append("text")
+          .text(function(d) {
+            return d.votes;
+          })
+          .attr("text-anchor", "start")
+          .attr("x", function(d) {
+            return x(d.votes) + 3;
+          })
+          .attr("y", function(d) {
+            return (
+              y0(d.district) +
+              districtD[d.district](d.candidate) +
+              districtD[d.district].rangeBand() / 2 +
+              1
+            );
+          })
+          .style("alignment-baseline", "middle")
+          .attr("class", "label");
+
+        ls.append("text")
+          .text(function(d) {
+            return d.candidate;
+          })
+          .attr("text-anchor", "end")
+          .attr("x", -5)
+          .attr("y", function(d) {
+            return (
+              y0(d.district) +
+              districtD[d.district](d.candidate) +
+              districtD[d.district].rangeBand() / 2
+            );
+          })
+          .style("alignment-baseline", "middle")
+          .attr("class", "label");
+      });
+    </script>
+  </body>
+</html>
